@@ -4,6 +4,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
+import '../models/bubble_presets.dart';
+import '../models/comic_fonts.dart';
 import 'DragSpeechBubbleComponents.dart';
 import 'DragSpeechBubbleData.dart';
 import 'SpeechBubblePainterWithText.dart';
@@ -40,18 +42,12 @@ class _DragSpeechBubbleEditDialogState
   FontStyle _fontStyle = FontStyle.normal;
   FontWeight _fontWeight = FontWeight.normal;
   DragBubbleShape _bubbleShape = DragBubbleShape.rectangle;
+  double _textStrokeWidth = 0;
+  Color? _textStrokeColor;
 
   late final TextEditingController _textController;
 
-  final List<String> _fontFamilies = const [
-    'Roboto',
-    'Arial',
-    'Times New Roman',
-    'Courier New',
-    'Comic Sans MS',
-    'Impact',
-    'Verdana',
-  ];
+  final List<String> _fontFamilies = ComicFonts.families;
 
   // ===== Geometry helpers (MUST mirror the painter) =====
   Rect _bubbleRect(Size size) => Rect.fromLTWH(
@@ -174,12 +170,16 @@ class _DragSpeechBubbleEditDialogState
                           fontFamily: _fontFamily,
                           fontWeight: _fontWeight,
                           fontStyle: _fontStyle,
+                          textStrokeWidth: _textStrokeWidth,
+                          textStrokeColor: _textStrokeColor,
                         ),
                       ),
                     ),
 
                     // === Red handle at the *actual tail tip* ===
-                    if (_bubbleShape != DragBubbleShape.shout)
+                    if (_bubbleShape != DragBubbleShape.shout &&
+                        _bubbleShape != DragBubbleShape.caption &&
+                        _bubbleShape != DragBubbleShape.thought)
                       Positioned(
                         left: handleCenter.dx - 10,
                         top: handleCenter.dy - 10,
@@ -205,6 +205,42 @@ class _DragSpeechBubbleEditDialogState
                 ),
               ),
               const SizedBox(height: 12),
+              SizedBox(
+                height: 44,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: kBubblePresets.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, i) {
+                    final preset = kBubblePresets[i];
+                    return ActionChip(
+                      avatar: Icon(preset.icon, size: 18),
+                      label: Text(preset.label),
+                      onPressed: () {
+                        setState(() {
+                          _bubbleColor = preset.data.bubbleColor;
+                          _borderColor = preset.data.borderColor;
+                          _borderWidth = preset.data.borderWidth;
+                          _bubbleShape = preset.data.bubbleShape;
+                          _padding = preset.data.padding;
+                          _fontSize = preset.data.fontSize;
+                          _textColor = preset.data.textColor;
+                          _fontFamily = preset.data.fontFamily;
+                          _fontWeight = preset.data.fontWeight;
+                          _fontStyle = preset.data.fontStyle;
+                          _textStrokeWidth = preset.data.textStrokeWidth;
+                          _textStrokeColor = preset.data.textStrokeColor;
+                          if (preset.data.text.isNotEmpty &&
+                              _textController.text == 'Hello!') {
+                            _textController.text = preset.data.text;
+                          }
+                        });
+                      },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
               // ==== Text input ====
               TextField(
                 controller: _textController,
@@ -224,8 +260,14 @@ class _DragSpeechBubbleEditDialogState
                   border: OutlineInputBorder(),
                 ),
                 items: DragBubbleShape.values.map((s) {
-                  final name =
-                      s == DragBubbleShape.rectangle ? 'Rectangle' : 'Shout';
+                  final name = switch (s) {
+                    DragBubbleShape.rectangle => 'Speech (rectangle)',
+                    DragBubbleShape.shout => 'Shout',
+                    DragBubbleShape.thought => 'Thought',
+                    DragBubbleShape.whisper => 'Whisper',
+                    DragBubbleShape.caption => 'Caption / narration',
+                    DragBubbleShape.oval => 'Oval',
+                  };
                   return DropdownMenuItem(value: s, child: Text(name));
                 }).toList(),
                 onChanged: (v) => setState(() => _bubbleShape = v!),
@@ -257,6 +299,28 @@ class _DragSpeechBubbleEditDialogState
                 _textColor,
                 (c) => setState(() => _textColor = c),
               ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Text('Text outline: '),
+                  Expanded(
+                    child: Slider(
+                      value: _textStrokeWidth,
+                      min: 0,
+                      max: 4,
+                      divisions: 8,
+                      label: _textStrokeWidth.toStringAsFixed(1),
+                      onChanged: (v) => setState(() => _textStrokeWidth = v),
+                    ),
+                  ),
+                ],
+              ),
+              if (_textStrokeWidth > 0)
+                _buildColorPicker(
+                  'Outline color',
+                  _textStrokeColor ?? Colors.white,
+                  (c) => setState(() => _textStrokeColor = c),
+                ),
               const SizedBox(height: 16),
               // Font Size
               Row(
@@ -406,6 +470,8 @@ class _DragSpeechBubbleEditDialogState
               fontFamily: _fontFamily,
               fontWeight: _fontWeight,
               fontStyle: _fontStyle,
+              textStrokeWidth: _textStrokeWidth,
+              textStrokeColor: _textStrokeColor,
             );
 
             // Rasterize + CROP transparent pixels (so bounds == bubble)
@@ -432,6 +498,8 @@ class _DragSpeechBubbleEditDialogState
               'fontWeight': _fontWeight,
               'fontStyle': _fontStyle,
               'padding': _padding,
+              'textStrokeWidth': _textStrokeWidth,
+              'textStrokeColor': _textStrokeColor,
               'width': logicalW, // cropped logical size
               'height': logicalH,
               'pngBytes': pngBytes,

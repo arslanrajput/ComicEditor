@@ -50,6 +50,15 @@ class ComicTheme {
     );
   }
 
+  /// Flat panel frame for PDF/PNG export (no shadow — shadows get clipped at page edge).
+  static BoxDecoration comicPanelFrameExport() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(4),
+      border: Border.all(color: Colors.black87, width: 1.5),
+    );
+  }
+
   static BoxDecoration editorToolbarDecoration() {
     return BoxDecoration(
       color: toolbarBg,
@@ -118,9 +127,9 @@ class ComicTheme {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 9,
+                  fontSize: 10,
                   fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                  color: active ? primaryDark : Colors.black54,
+                  color: active ? ComicTheme.primaryDark : Colors.black54,
                 ),
               ),
             ],

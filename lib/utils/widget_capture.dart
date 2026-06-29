@@ -8,6 +8,8 @@ import 'package:flutter/rendering.dart';
 Future<Uint8List> renderWidgetToImage(
   BuildContext context,
   Widget widget, {
+  required double width,
+  required double height,
   Duration settleDelay = const Duration(milliseconds: 300),
   int maxRetries = 10,
   double pixelRatio = 3.0,
@@ -15,11 +17,21 @@ Future<Uint8List> renderWidgetToImage(
   final repaintKey = GlobalKey();
 
   final overlayEntry = OverlayEntry(
-    builder: (context) => Center(
-      child: RepaintBoundary(
-        key: repaintKey,
-        child: widget,
-      ),
+    builder: (context) => Stack(
+      children: [
+        Positioned(
+          left: -width * 2,
+          top: 0,
+          child: RepaintBoundary(
+            key: repaintKey,
+            child: SizedBox(
+              width: width,
+              height: height,
+              child: widget,
+            ),
+          ),
+        ),
+      ],
     ),
   );
 
@@ -43,6 +55,7 @@ Future<Uint8List> renderWidgetToImage(
     throw Exception('Widget is not fully painted after retries.');
   }
 
+  // Capture at exact logical size — pixelRatio controls output resolution only.
   final image = await boundary.toImage(pixelRatio: pixelRatio);
   final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
   overlayEntry.remove();

@@ -1,11 +1,12 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:printing/printing.dart';
-import 'package:pdf/pdf.dart';
 
 import '../PanelModel/Project.dart';
 import '../PreviewPdf/PDFPageFormat.dart';
+import '../screens/comic_reader_screen.dart';
+import '../services/app_settings.dart';
+import '../widgets/export_options_sheet.dart';
 import '../utils/pdf_page_export.dart';
 import '../utils/page_canvas_builder.dart';
 class AllPagesPreviewScreen extends StatefulWidget {
@@ -40,12 +41,8 @@ class _AllPagesPreviewScreenState extends State<AllPagesPreviewScreen> {
     super.dispose();
   }
 
-  Size get _pageSize => PDFPageFormat.formats[widget.pageFormat]!;
-
   @override
   Widget build(BuildContext context) {
-    final pageSize = _pageSize;
-
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -54,9 +51,23 @@ class _AllPagesPreviewScreenState extends State<AllPagesPreviewScreen> {
         title: Text('${widget.projectName} - Preview'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.menu_book_outlined),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ComicReaderScreen(
+                  pages: widget.pages,
+                  projectName: widget.projectName,
+                  pageFormat: widget.pageFormat,
+                ),
+              ),
+            ),
+            tooltip: 'Reader mode',
+          ),
+          IconButton(
             icon: const Icon(Icons.download),
             onPressed: _showExportOptions,
-            tooltip: 'Export All Pages',
+            tooltip: 'Export',
           ),
         ],
       ),
@@ -81,31 +92,17 @@ class _AllPagesPreviewScreenState extends State<AllPagesPreviewScreen> {
               itemCount: widget.pages.length,
               itemBuilder: (context, pageIndex) {
                 final page = widget.pages[pageIndex];
-                return Container(
-                  margin: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.grey, width: 2),
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: AspectRatio(
-                      aspectRatio: pageSize.width / pageSize.height,
-                      child: PageCanvasBuilder.build(
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    return Center(
+                      child: PageCanvasBuilder.buildFittedPage(
                         panels: page,
-                        canvasWidth: pageSize.width,
-                        canvasHeight: pageSize.height,
+                        formatKey: widget.pageFormat,
+                        maxWidth: constraints.maxWidth - 32,
+                        maxHeight: constraints.maxHeight - 32,
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 );
               },
             ),
@@ -162,18 +159,19 @@ class _AllPagesPreviewScreenState extends State<AllPagesPreviewScreen> {
   }
 
   void _showExportOptions() {
-    Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => _generatePdfFromWidget(),
+    showComicExportSheet(
+      context: context,
+      pages: widget.pages,
+      projectName: widget.projectName,
+      pageFormatKey: widget.pageFormat,
     );
   }
 
   Future<Uint8List> _generatePdfFromWidget() async {
-    final pageSize = _pageSize;
     return exportPagesToPdf(
       context: context,
       pages: widget.pages,
-      canvasWidth: pageSize.width,
-      canvasHeight: pageSize.height,
+      pageFormatKey: widget.pageFormat,
     );
   }
 }
