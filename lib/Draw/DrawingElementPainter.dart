@@ -1,26 +1,23 @@
-import 'dart:ui';
+import 'package:flutter/material.dart';
 
-import 'package:flutter/cupertino.dart';
+import 'DrawingToolsPanel.dart';
+import 'stroke_renderer.dart';
 
 class DrawingElementPainter extends CustomPainter {
   final List<Offset> points;
   final Color color;
   final double strokeWidth;
+  final DrawingTool tool;
 
   DrawingElementPainter({
     required this.points,
     required this.color,
     required this.strokeWidth,
+    this.tool = DrawingTool.pen,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = strokeWidth;
-
-    // Determine the original bounding box of points
     final nonZeroPoints = points.where((p) => p != Offset.zero).toList();
     if (nonZeroPoints.isEmpty) return;
 
@@ -31,29 +28,35 @@ class DrawingElementPainter extends CustomPainter {
 
     final originalWidth = maxX - minX;
     final originalHeight = maxY - minY;
-    if (originalWidth < 1e-6 || originalHeight < 1e-6) return;
+    if (originalWidth < 1e-6 && originalHeight < 1e-6) return;
 
-    final scaleX = size.width / originalWidth;
-    final scaleY = size.height / originalHeight;
+    final scaleX = originalWidth < 1e-6 ? 1.0 : size.width / originalWidth;
+    final scaleY = originalHeight < 1e-6 ? 1.0 : size.height / originalHeight;
 
-    for (int i = 0; i < points.length - 1; i++) {
-      if (points[i] != Offset.zero && points[i + 1] != Offset.zero) {
-        final p1 = Offset(
-          (points[i].dx - minX) * scaleX,
-          (points[i].dy - minY) * scaleY,
-        );
-        final p2 = Offset(
-          (points[i + 1].dx - minX) * scaleX,
-          (points[i + 1].dy - minY) * scaleY,
-        );
-        canvas.drawLine(p1, p2, paint);
-      }
-    }
+    final scaled = <Offset>[
+      for (final p in points)
+        if (p != Offset.zero)
+          Offset(
+            (p.dx - minX) * scaleX,
+            (p.dy - minY) * scaleY,
+          ),
+    ];
+
+    if (scaled.isEmpty) return;
+
+    final paint = paintForDrawingTool(
+      tool: tool,
+      color: color,
+      strokeWidth: strokeWidth,
+    );
+
+    drawSmoothStroke(canvas, scaled, paint);
   }
 
   @override
   bool shouldRepaint(DrawingElementPainter oldDelegate) =>
       oldDelegate.points != points ||
-          oldDelegate.color != color ||
-          oldDelegate.strokeWidth != strokeWidth;
+      oldDelegate.color != color ||
+      oldDelegate.strokeWidth != strokeWidth ||
+      oldDelegate.tool != tool;
 }

@@ -16,6 +16,9 @@ import 'ClipArt/CharacterClipartPicker.dart';
 import 'Draw/DrawingCanvas.dart';
 import 'Draw/DrawingElementPainter.dart';
 import 'Draw/DrawingToolsPanel.dart';
+import 'Draw/sketch_toolbar.dart';
+import 'Draw/stroke_renderer.dart';
+import 'PanelModel/SaveStatusPill.dart';
 import 'Resizeable/GridPainter.dart';
 import 'PanelModel/PanelElementModel.dart';
 import 'Resizeable/ResizableDraggable.dart';
@@ -24,11 +27,15 @@ import 'SpeechDrag/DragSpeechBubbleComponents.dart';
 import 'SpeechDrag/DragSpeechBubbleData.dart';
 import 'TextEditorDialog/TextEditDialog.dart';
 import 'theme/comic_theme.dart';
+import 'utils/edit_history.dart';
+import 'utils/element_rotation.dart';
+import 'utils/project_clone.dart';
+import 'widgets/zoomable_canvas.dart';
 
 import 'dart:math' as math;
 
 // Menu actions
-enum _PanelMenuAction { toggleMultiSelect, group, ungroup, copy, paste, delete, undo ,redo}
+enum _PanelMenuAction { toggleMultiSelect, group, ungroup, copy, paste, delete, undo, redo, rotate }
 
 class _Snap {
   final int index;
@@ -69,8 +76,8 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
 
   bool isDrawing = false;
   Color drawSelectedColor = Colors.black;
-  double selectedBrushSize = 1.0;
-  DrawingTool currentTool = DrawingTool.pen;
+  double selectedBrushSize = 3.0;
+  DrawingTool currentTool = DrawingTool.pencil;
 
   String? _activeToolId;
 
@@ -144,10 +151,36 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
   // ——— Save/Progress state ———
 
 
-  final List<PanelElementModel> _redoStack = []; // holds items removed by Undo
+  final _editHistory = EditHistory<PanelEditSnapshot>();
 
 
-  // ==== NEW: layer locked, hidden handling
+  void _pushEditHistory() {
+    _editHistory.push(PanelEditSnapshot.from(
+      elements: currentElements,
+      backgroundColor: _selectedBackgroundColor,
+    ));
+  }
+
+  Widget _rotatedChild(PanelElementModel element, Widget child) {
+    final deg = ElementRotation.fromMeta(element.meta);
+    if (deg == 0) return child;
+    return Transform.rotate(angle: deg * math.pi / 180, child: child);
+  }
+
+  void _rotateSelected(double degrees) {
+    if (!_hasSelection) return;
+    _pushEditHistory();
+    setState(() {
+      for (final i in _selected) {
+        final e = currentElements[i];
+        final current = ElementRotation.fromMeta(e.meta);
+        currentElements[i] = e.copyWith(
+          meta: ElementRotation.setInMeta(e.meta, (current + degrees) % 360),
+        );
+      }
+    });
+    _queueAutosave();
+  }
 // inside _PanelEditScreenState:
   Map<String, dynamic> _safeMetaMap(String? meta) {
     if (meta == null || meta.isEmpty) return {};
@@ -340,6 +373,7 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
       newOnes.add(_deepCloneElement(e, offsetOverride: pos));
     }
 
+    _pushEditHistory();
     setState(() {
       for (final e in newOnes) {
         currentElements.add(e);
@@ -369,6 +403,7 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
   }*/
   void _deleteSelection() {
     if (!_hasUnlockedSelection) return;
+    _pushEditHistory();
     final toDelete = _selectedUnlocked.toList()..sort();
     setState(() {
       for (int n = toDelete.length - 1; n >= 0; n--) {
@@ -403,6 +438,10 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
       canPop: false,
       onPopInvoked: (didPop) async {
         if (didPop) return;
+        if (isDrawing) {
+          _exitSketchMode();
+          return;
+        }
         await _onWillPop();
       },
       child: Scaffold(
@@ -411,7 +450,10 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
           foregroundColor: Colors.black87,
           titleSpacing: 10,
           leadingWidth: 40,
-          title: const Text('Panel Editor', overflow: TextOverflow.ellipsis),
+          title: Text(
+            isDrawing ? 'Sketch Mode' : 'Panel Editor',
+            overflow: TextOverflow.ellipsis,
+          ),
 
           bottom: _saveProgress != null
               ? PreferredSize(
@@ -492,9 +534,10 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
                 children: [
                   Expanded(
                     child: Center(
-                      child: AspectRatio(
-                        aspectRatio: w / h,
-                        child: Container(
+                      child: ZoomableCanvas(
+                        child: AspectRatio(
+                          aspectRatio: w / h,
+                          child: Container(
                           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
                           child: ClipRRect(
@@ -506,8 +549,16 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
                                 child: Stack(
                                   clipBehavior: Clip.hardEdge,
                                   children: [
-                                    if (_isEditing)
+                                    if (_isEditing && !isDrawing)
                                       CustomPaint(size: Size.infinite, painter: GridPainter()),
+                                    for (int i = 0; i < currentElements.length; i++)
+                                      if (currentElements[i].type != 'Draw')
+                                        _buildElementWidget(currentElements[i], i),
+                                    for (int i = 0; i < currentElements.length; i++)
+                                      if (currentElements[i].type == 'Draw')
+                                        isDrawing
+                                            ? _buildSketchStrokeLayer(currentElements[i])
+                                            : _buildElementWidget(currentElements[i], i),
                                     if (isDrawing)
                                       Positioned.fill(
                                         child: DrawingCanvas(
@@ -517,9 +568,7 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
                                           onDrawingComplete: _onDrawingComplete,
                                         ),
                                       ),
-                                    for (int i = 0; i < currentElements.length; i++)
-                                      _buildElementWidget(currentElements[i], i),
-                                    if (currentElements.isEmpty)
+                                    if (currentElements.isEmpty && !isDrawing)
                                       const Center(
                                         child: Text(
                                           'No elements added yet.\nUse the tools below to add content.',
@@ -537,8 +586,9 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
                       ),
                     ),
                   ),
-                  _buildInlineBackgroundStrip(),
-                  _buildToolOptions(),
+                  ),
+                  if (!isDrawing) _buildInlineBackgroundStrip(),
+                  if (isDrawing) _buildSketchToolbar() else _buildToolOptions(),
                 ],
               ),
 
@@ -744,19 +794,14 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
         break;
 
       case 'Draw':
-        final points = element.value.split(';').map((pair) {
-          final coords = pair.split(',');
-          return Offset(
-            double.tryParse(coords[0]) ?? 0,
-            double.tryParse(coords[1]) ?? 0,
-          );
-        }).toList();
+        final points = _parseDrawPoints(element.value);
 
         final drawingWidget = CustomPaint(
           painter: DrawingElementPainter(
             points: points,
             color: element.color ?? Colors.black,
-            strokeWidth: element.fontSize ?? 1.0,
+            strokeWidth: element.fontSize ?? 3.0,
+            tool: drawingToolFromMeta(element.meta),
           ),
         );
 
@@ -929,7 +974,11 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
       return Positioned(
         top: element.offset.dy,
         left: element.offset.dx,
-        child: SizedBox(width: element.width, height: element.height, child: child),
+        child: SizedBox(
+          width: element.width,
+          height: element.height,
+          child: _rotatedChild(element, child),
+        ),
       );
     }
 
@@ -1039,8 +1088,6 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
                 height: size.height,
               );
             });
-            _redoStack.clear();   // ← break redo chain on fresh edits
-
             _queueAutosave();
 
           },
@@ -1095,19 +1142,14 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
         break;
 
       case 'Draw': {
-        final points = element.value.split(';').map((pair) {
-          final coords = pair.split(',');
-          return Offset(
-            double.tryParse(coords[0]) ?? 0,
-            double.tryParse(coords[1]) ?? 0,
-          );
-        }).toList();
+        final points = _parseDrawPoints(element.value);
 
         final drawingWidget = CustomPaint(
           painter: DrawingElementPainter(
             points: points,
             color: element.color ?? Colors.black,
-            strokeWidth: element.fontSize ?? 1.0,
+            strokeWidth: element.fontSize ?? 3.0,
+            tool: drawingToolFromMeta(element.meta),
           ),
         );
 
@@ -1153,8 +1195,6 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
                 height: size.height,
               );
             });
-            _redoStack.clear();   // ← break redo chain on fresh edits
-
             _queueAutosave();
 
           },
@@ -1206,7 +1246,11 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
       return Positioned(
         top: element.offset.dy,
         left: element.offset.dx,
-        child: SizedBox(width: element.width, height: element.height, child: child),
+        child: SizedBox(
+          width: element.width,
+          height: element.height,
+          child: _rotatedChild(element, child),
+        ),
       );
     }
 
@@ -1249,7 +1293,6 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
             height: size.height,
           );
         });
-        _redoStack.clear();   // ← break redo chain on fresh edits
         _queueAutosave();
       },
       onDelete: () => _deleteElementById(element.id), // <<< NEW
@@ -1909,8 +1952,6 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
       elementKeys.removeAt(index);
       _selected.remove(index);
     });
-    _redoStack.clear();   // ← break redo chain on fresh edits
-
     _queueAutosave();
   }
 
@@ -2152,6 +2193,7 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
   }
 
   void _addNewElement(PanelElementModel element) {
+    _pushEditHistory();
     setState(() {
       currentElements.add(element);
       elementKeys.add(GlobalKey<ResizableDraggableState>());
@@ -2161,7 +2203,6 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
         ..clear()
         ..add(currentElements.length - 1);
     });
-    _redoStack.clear();   // ← break redo chain on fresh edits
 
     _queueAutosave();
   }
@@ -2282,10 +2323,7 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
               _toolNavButton(Icons.chat_bubble_outline, 'Bubble',
                   _addSpeechBubble),
               _toolNavButton(Icons.text_fields, 'Text', _addTextBox),
-              _toolNavButton(Icons.draw_outlined, 'Draw', () {
-                setState(() => isDrawing = true);
-                _showDrawingToolsPanel();
-              }),
+              _toolNavButton(Icons.draw_outlined, 'Draw', _enterSketchMode),
             ],
           ),
         ),
@@ -2328,33 +2366,129 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
     );
   }
 
-  void _showDrawingToolsPanel() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (BuildContext context) {
-        return Padding(
-          padding: MediaQuery.of(context).viewInsets,
-          child: DrawingToolsPanel(
-            currentTool: currentTool,
-            currentColor: drawSelectedColor,
-            currentBrushSize: selectedBrushSize,
-            onToolChanged: (tool) => setState(() => currentTool = tool),
-            onColorChanged: (color) =>
-                setState(() => drawSelectedColor = color),
-            onBrushSizeChanged: (size) =>
-                setState(() => selectedBrushSize = size),
-            onUndo: () {},
-            onClearAll: () {},
-            onClose: () => Navigator.of(context).pop(),
-          ),
-        );
+  void _enterSketchMode() {
+    setState(() {
+      isDrawing = true;
+      _activeToolId = 'Draw';
+      _selected.clear();
+      currentTool = DrawingTool.pencil;
+      selectedBrushSize = SketchToolbar.defaultSizeForTool(DrawingTool.pencil);
+    });
+  }
+
+  void _exitSketchMode() {
+    setState(() {
+      isDrawing = false;
+      if (_activeToolId == 'Draw') _activeToolId = null;
+    });
+    _queueAutosave();
+  }
+
+  Widget _buildSketchToolbar() {
+    return SketchToolbar(
+      currentTool: currentTool,
+      currentColor: drawSelectedColor,
+      currentBrushSize: selectedBrushSize,
+      onToolChanged: (tool) {
+        setState(() {
+          currentTool = tool;
+          selectedBrushSize = SketchToolbar.defaultSizeForTool(tool);
+        });
       },
+      onColorChanged: (color) => setState(() => drawSelectedColor = color),
+      onBrushSizeChanged: (size) => setState(() => selectedBrushSize = size),
+      onUndo: _undoLastDrawing,
+      onDone: _exitSketchMode,
     );
+  }
+
+  List<Offset> _parseDrawPoints(String value) {
+    return value.split(';').map((pair) {
+      final coords = pair.split(',');
+      return Offset(
+        double.tryParse(coords[0]) ?? 0,
+        double.tryParse(coords[1]) ?? 0,
+      );
+    }).toList();
+  }
+
+  Widget _buildSketchStrokeLayer(PanelElementModel element) {
+    return Positioned(
+      top: element.offset.dy,
+      left: element.offset.dx,
+      child: IgnorePointer(
+        child: SizedBox(
+          width: element.width,
+          height: element.height,
+          child: CustomPaint(
+            painter: DrawingElementPainter(
+              points: _parseDrawPoints(element.value),
+              color: element.color ?? Colors.black,
+              strokeWidth: element.fontSize ?? 3.0,
+              tool: drawingToolFromMeta(element.meta),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _addDrawingStroke(PanelElementModel element) {
+    setState(() {
+      currentElements.add(element);
+      elementKeys.add(GlobalKey<ResizableDraggableState>());
+      _hiddenById[element.id] = false;
+      _lockedById[element.id] = false;
+    });
+    _queueAutosave();
+  }
+
+  void _eraseDrawingsAlongPath(List<Offset> points, double radius) {
+    if (points.isEmpty) return;
+
+    final minX = points.map((p) => p.dx).reduce(math.min) - radius;
+    final minY = points.map((p) => p.dy).reduce(math.min) - radius;
+    final maxX = points.map((p) => p.dx).reduce(math.max) + radius;
+    final maxY = points.map((p) => p.dy).reduce(math.max) + radius;
+    final eraseRect = Rect.fromLTRB(minX, minY, maxX, maxY);
+
+    final ids = currentElements
+        .where((e) =>
+            e.type == 'Draw' &&
+            eraseRect.overlaps(
+              Rect.fromLTWH(e.offset.dx, e.offset.dy, e.width, e.height),
+            ))
+        .map((e) => e.id)
+        .toList();
+
+    if (ids.isEmpty) return;
+    for (final id in ids) {
+      _deleteElementById(id);
+    }
+  }
+
+  void _undoLastDrawing() {
+    for (int i = currentElements.length - 1; i >= 0; i--) {
+      if (currentElements[i].type == 'Draw') {
+        _deleteElementById(currentElements[i].id);
+        return;
+      }
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No drawing to undo')),
+      );
+    }
+  }
+
+  void _clearAllDrawings() {
+    final ids = currentElements
+        .where((e) => e.type == 'Draw')
+        .map((e) => e.id)
+        .toList();
+    for (final id in ids) {
+      _deleteElementById(id);
+    }
   }
 
   void _pickBackgroundColor() async {
@@ -2463,21 +2597,25 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
   }
 
   void _onDrawingComplete(List<Offset> points) {
-    final nonZeroPoints = points.where((p) => p != Offset.zero).toList();
-    if (nonZeroPoints.isEmpty) {
-      setState(() => isDrawing = false);
+    final stroke = filterStrokePoints(points);
+    if (stroke.isEmpty) return;
+
+    if (currentTool == DrawingTool.eraser) {
+      _eraseDrawingsAlongPath(stroke, selectedBrushSize);
       return;
     }
 
-    final minX = nonZeroPoints.map((p) => p.dx).reduce(math.min);
-    final minY = nonZeroPoints.map((p) => p.dy).reduce(math.min);
-    final maxX = nonZeroPoints.map((p) => p.dx).reduce(math.max);
-    final maxY = nonZeroPoints.map((p) => p.dy).reduce(math.max);
+    final minX = stroke.map((p) => p.dx).reduce(math.min);
+    final minY = stroke.map((p) => p.dy).reduce(math.min);
+    final maxX = stroke.map((p) => p.dx).reduce(math.max);
+    final maxY = stroke.map((p) => p.dy).reduce(math.max);
 
-    final boundingWidth = (maxX - minX).clamp(10.0, double.infinity);
-    final boundingHeight = (maxY - minY).clamp(10.0, double.infinity);
+    final padding = selectedBrushSize / 2;
+    final boundingWidth = (maxX - minX + padding * 2).clamp(8.0, double.infinity);
+    final boundingHeight = (maxY - minY + padding * 2).clamp(8.0, double.infinity);
 
-    final normalizedPoints = points.map((p) => p - Offset(minX, minY)).toList();
+    final normalizedPoints =
+        stroke.map((p) => p - Offset(minX - padding, minY - padding)).toList();
     final drawingData =
         normalizedPoints.map((e) => '${e.dx},${e.dy}').join(';');
 
@@ -2485,16 +2623,16 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       type: 'Draw',
       value: drawingData,
-      offset: Offset(minX, minY),
+      offset: Offset(minX - padding, minY - padding),
       width: boundingWidth,
       height: boundingHeight,
       size: Size(boundingWidth, boundingHeight),
       color: drawSelectedColor,
       fontSize: selectedBrushSize,
+      meta: drawingToolToMeta(currentTool),
     );
 
-    _addNewElement(newElement);
-    setState(() => isDrawing = false);
+    _addDrawingStroke(newElement);
   }
 
   Widget _buildImageElement(PanelElementModel element) {
@@ -2648,18 +2786,23 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
         // Delete selection (single or multiple)
         PopupMenuItem<_PanelMenuAction>(
           value: _PanelMenuAction.delete,
-          enabled: _canPaste,
+          enabled: _hasSelection,
           child: _menuRow(Icons.delete, 'Delete'),
         ),
         PopupMenuItem<_PanelMenuAction>(
           value: _PanelMenuAction.undo,
-          enabled: !_isSaving && currentElements.isNotEmpty,
+          enabled: !_isSaving && _editHistory.canUndo,
           child: _menuRow(Icons.undo, 'Undo'),
         ),
         PopupMenuItem<_PanelMenuAction>(
           value: _PanelMenuAction.redo,
-          enabled: !_isSaving && _redoStack.isNotEmpty,          // ← enable/disable
+          enabled: !_isSaving && _editHistory.canRedo,
           child: _menuRow(Icons.redo, 'Redo'),
+        ),
+        PopupMenuItem<_PanelMenuAction>(
+          value: _PanelMenuAction.rotate,
+          enabled: _hasSelection,
+          child: _menuRow(Icons.rotate_right, 'Rotate 15°'),
         ),
 
       ],
@@ -2706,6 +2849,9 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
         break;
       case _PanelMenuAction.redo:
         _redoLast();
+        break;
+      case _PanelMenuAction.rotate:
+        _rotateSelected(15);
         break;
     }
   }
@@ -3183,28 +3329,44 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
 
   void _undoLast() {
     if (_isSaving) return;
-    if (currentElements.isEmpty) return;
+    final prev = _editHistory.undo(PanelEditSnapshot.from(
+      elements: currentElements,
+      backgroundColor: _selectedBackgroundColor,
+    ));
+    if (prev == null) return;
 
     setState(() {
-      final removed = currentElements.removeLast();
-      if (elementKeys.isNotEmpty) elementKeys.removeLast();
-      _redoStack.add(removed);            // ← enable redo
+      currentElements
+        ..clear()
+        ..addAll(prev.elements);
+      elementKeys = List.generate(
+        prev.elements.length,
+        (_) => GlobalKey<ResizableDraggableState>(),
+      );
+      _selectedBackgroundColor = prev.backgroundColor;
       _selected.clear();
     });
-    _queueAutosave(); // or your autosave trigger
+    _queueAutosave();
   }
 
   void _redoLast() {
     if (_isSaving) return;
-    if (_redoStack.isEmpty) return;
+    final next = _editHistory.redo(PanelEditSnapshot.from(
+      elements: currentElements,
+      backgroundColor: _selectedBackgroundColor,
+    ));
+    if (next == null) return;
 
     setState(() {
-      final el = _redoStack.removeLast();
-      currentElements.add(el);
-      elementKeys.add(GlobalKey<ResizableDraggableState>());
-      _selected
+      currentElements
         ..clear()
-        ..add(currentElements.length - 1);
+        ..addAll(next.elements);
+      elementKeys = List.generate(
+        next.elements.length,
+        (_) => GlobalKey<ResizableDraggableState>(),
+      );
+      _selectedBackgroundColor = next.backgroundColor;
+      _selected.clear();
     });
     _queueAutosave();
   }
@@ -3366,76 +3528,3 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
 
 /// A tiny rounded pill that shows save state + optional percent.
 /// Yellow when saving/unsaved, Green when saved.
-class SaveStatusPill extends StatelessWidget {
-  final String status;        // e.g. "Saving..." or "Saved"
-  final double? progress;     // null when idle, 0..1 when saving
-
-  const SaveStatusPill({
-    super.key,
-    required this.status,
-    required this.progress,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bool isSaving = progress != null && progress! < 1.0;
-    final bool isSaved  = (progress == null && status.toLowerCase() == 'saved') || progress == 1.0;
-
-    final Color bg = isSaved
-        ? Colors.green.shade600
-        : Colors.amber.shade600; // yellow when not saved / saving
-
-    final Color fg = Colors.white;
-
-    final String percentStr =
-    isSaving ? '${(progress!.clamp(0, 1) * 100).round()}%' : '';
-
-    final IconData icon = isSaved ? Icons.check_circle : Icons.autorenew;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOut,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(999), // full pill
-        boxShadow: [
-          BoxShadow(
-            color: bg.withOpacity(0.35),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: Icon(icon, key: ValueKey(icon), size: 16, color: fg),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            status,
-            style: TextStyle(
-              color: fg,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          if (isSaving) ...[
-            const SizedBox(width: 6),
-            Text(
-              percentStr,
-              style: TextStyle(
-                color: fg.withOpacity(0.95),
-                fontSize: 12,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}

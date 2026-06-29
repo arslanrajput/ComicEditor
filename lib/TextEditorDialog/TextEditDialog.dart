@@ -1,3 +1,4 @@
+import '../models/comic_fonts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
@@ -32,15 +33,7 @@ class _TextEditDialogState extends State<TextEditDialog> {
   late FontWeight _fontWeight;
   late FontStyle _fontStyle;
 
-  final List<String> _fontFamilies = [
-    'Roboto',
-    'Arial',
-    'Times New Roman',
-    'Courier New',
-    'Comic Sans MS',
-    'Impact',
-    'Verdana',
-  ];
+  final List<String> _fontFamilies = ComicFonts.families;
 
   @override
   void initState() {

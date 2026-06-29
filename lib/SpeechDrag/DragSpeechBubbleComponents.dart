@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-enum DragBubbleShape { rectangle, shout }
+enum DragBubbleShape { rectangle, shout, thought, whisper, caption, oval }
 
 class DragSpeechBubblePainter extends CustomPainter {
   final Color bubbleColor;
@@ -51,7 +51,13 @@ class DragSpeechBubblePainter extends CustomPainter {
             left, top, right, bottom);
         break;
       case DragBubbleShape.shout:
-        _drawShoutBubble(path, size,left, top, right, bottom);
+        _drawShoutBubble(path, size, left, top, right, bottom);
+        break;
+      case DragBubbleShape.thought:
+      case DragBubbleShape.whisper:
+      case DragBubbleShape.caption:
+      case DragBubbleShape.oval:
+        path.addOval(Rect.fromLTRB(left, top, right, bottom));
         break;
     }
 

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:comic_editor/main.dart';
 import 'package:comic_editor/project_hive_model.dart';
+import 'package:comic_editor/services/app_settings.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 
@@ -25,6 +26,7 @@ void main() {
     }
 
     await Hive.openBox<ProjectHiveModel>('drafts');
+    await AppSettings.init();
   });
 
   tearDownAll(() async {

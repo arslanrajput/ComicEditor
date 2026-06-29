@@ -4,11 +4,14 @@ import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'ProjectsListScreen.dart';
+import 'services/app_settings.dart';
 import 'theme/comic_theme.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   // Initialize Hive with the correct method for your version
   final appDocumentDir = await getApplicationDocumentsDirectory();
@@ -27,7 +30,9 @@ void main() async {
 
   // Open the box
   await Hive.openBox<ProjectHiveModel>('drafts');
+  await AppSettings.init();
 
+  FlutterNativeSplash.remove();
   runApp(const MyApp());
 }
 

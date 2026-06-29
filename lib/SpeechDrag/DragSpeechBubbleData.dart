@@ -17,6 +17,8 @@ class DragSpeechBubbleData {
   final String fontFamily;
   final FontWeight fontWeight;
   final FontStyle fontStyle;
+  final double textStrokeWidth;
+  final Color? textStrokeColor;
 
   const DragSpeechBubbleData({
     required this.text,
@@ -32,6 +34,8 @@ class DragSpeechBubbleData {
     required this.fontWeight,
     required this.fontStyle,
     this.tailNorm,
+    this.textStrokeWidth = 0,
+    this.textStrokeColor,
   });
 
   Map<String, dynamic> toMap() => {
@@ -50,6 +54,8 @@ class DragSpeechBubbleData {
     'fontFamily': fontFamily,
     'fontWeight': fontWeight.index,
     'fontStyle': fontStyle.index,
+    'textStrokeWidth': textStrokeWidth,
+    'textStrokeColor': textStrokeColor?.value,
   };
 
   factory DragSpeechBubbleData.fromMap(Map<String, dynamic> map) {
@@ -76,6 +82,10 @@ class DragSpeechBubbleData {
       fontFamily: map['fontFamily'] ?? 'Roboto',
       fontWeight: FontWeight.values[map['fontWeight'] ?? 3], // normal=3
       fontStyle: FontStyle.values[map['fontStyle'] ?? 0], // normal=0
+      textStrokeWidth: (map['textStrokeWidth'] ?? 0).toDouble(),
+      textStrokeColor: map['textStrokeColor'] != null
+          ? Color(map['textStrokeColor'] as int)
+          : null,
     );
   }
 }

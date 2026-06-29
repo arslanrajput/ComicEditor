@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
-
-
-// Define your DrawingTool enum
-enum DrawingTool { pen }
+enum DrawingTool { pencil, pen, marker, eraser }
 
 class DrawingToolsPanel extends StatefulWidget {
   final DrawingTool currentTool;
@@ -124,8 +121,8 @@ class _DrawingToolsPanelState extends State<DrawingToolsPanel> {
                   child: Slider(
                     value: _localBrushSize,
                     min: 1,
-                    max: 20,
-                    divisions: 19,
+                    max: 28,
+                    divisions: 27,
                     label: _localBrushSize.round().toString(),
                     onChanged: (value) {
                       setState(() => _localBrushSize = value);
@@ -142,8 +139,8 @@ class _DrawingToolsPanelState extends State<DrawingToolsPanel> {
                   ),
                   child: Center(
                     child: Container(
-                      width: _localBrushSize,
-                      height: _localBrushSize,
+                      width: _localBrushSize.clamp(4, 24),
+                      height: _localBrushSize.clamp(4, 24),
                       decoration: BoxDecoration(
                         color: _localColor,
                         shape: BoxShape.circle,
@@ -178,7 +175,7 @@ class _DrawingToolsPanelState extends State<DrawingToolsPanel> {
                       ),
                     ),
                   );
-                }).toList(),
+                }),
                 GestureDetector(
                   onTap: _showColorPicker,
                   child: Container(
@@ -221,39 +218,27 @@ class _DrawingToolsPanelState extends State<DrawingToolsPanel> {
 
   IconData _getToolIcon(DrawingTool tool) {
     switch (tool) {
+      case DrawingTool.pencil:
+        return Icons.create_outlined;
       case DrawingTool.pen:
         return Icons.edit;
-    /*  case DrawingTool.highlighter:
-        return Icons.highlight;
+      case DrawingTool.marker:
+        return Icons.brush_outlined;
       case DrawingTool.eraser:
-        return Icons.cleaning_services;
-      case DrawingTool.line:
-        return Icons.horizontal_rule;
-      case DrawingTool.rectangle:
-        return Icons.crop_square;
-      case DrawingTool.circle:
-        return Icons.circle_outlined;
-      case DrawingTool.arrow:
-        return Icons.arrow_forward;*/
+        return Icons.auto_fix_off_outlined;
     }
   }
 
   String _getToolName(DrawingTool tool) {
     switch (tool) {
+      case DrawingTool.pencil:
+        return 'Pencil';
       case DrawingTool.pen:
         return 'Pen';
-      /*case DrawingTool.highlighter:
-        return 'Highlighter';
+      case DrawingTool.marker:
+        return 'Marker';
       case DrawingTool.eraser:
         return 'Eraser';
-      case DrawingTool.line:
-        return 'Line';
-      case DrawingTool.rectangle:
-        return 'Rectangle';
-      case DrawingTool.circle:
-        return 'Circle';
-      case DrawingTool.arrow:
-        return 'Arrow';*/
     }
   }
 
@@ -292,4 +277,3 @@ class _DrawingToolsPanelState extends State<DrawingToolsPanel> {
     }
   }
 }
-

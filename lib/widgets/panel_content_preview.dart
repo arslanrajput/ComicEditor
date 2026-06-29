@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../Draw/DrawingElementPainter.dart';
+import '../Draw/stroke_renderer.dart';
 import '../PanelModel/PanelElementModel.dart';
 import '../PanelModel/Project.dart';
 
@@ -123,18 +124,18 @@ class PanelContentPreview extends StatelessWidget {
         );
 
       case 'Draw':
-        final points = element.value.split(';').map((pair) {
-          final coords = pair.split(',');
-          return Offset(
-            double.tryParse(coords[0]) ?? 0,
-            double.tryParse(coords[1]) ?? 0,
-          );
-        }).toList();
         return CustomPaint(
           painter: DrawingElementPainter(
-            points: points,
+            points: element.value.split(';').map((pair) {
+              final coords = pair.split(',');
+              return Offset(
+                double.tryParse(coords[0]) ?? 0,
+                double.tryParse(coords[1]) ?? 0,
+              );
+            }).toList(),
             color: element.color ?? Colors.black,
-            strokeWidth: element.fontSize ?? 1.0,
+            strokeWidth: element.fontSize ?? 3.0,
+            tool: drawingToolFromMeta(element.meta),
           ),
         );
 

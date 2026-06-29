@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class CharacterClipartPickerDialog extends StatefulWidget {
@@ -13,8 +14,11 @@ class _CharacterClipartPickerDialogState
     extends State<CharacterClipartPickerDialog> {
   final TextEditingController _searchController = TextEditingController();
   String _searchText = '';
+  List<String> _characterAssets = [];
+  List<String> _clipartAssets = [];
+  bool _loading = true;
 
-  static const _characterAssets = [
+  static const _allCharacterAssets = [
     'assets/characters/ic_super_hero_1.png',
     'assets/characters/ic_engineer.png',
     'assets/characters/ic_super_hero.png',
@@ -23,7 +27,7 @@ class _CharacterClipartPickerDialogState
     'assets/characters/ic_super_hero_3.png',
   ];
 
-  static const _clipartAssets = [
+  static const _allClipartAssets = [
     'assets/clipart/ic_strength.png',
     'assets/clipart/ic_thank_you.png',
     'assets/clipart/ic_super_power.png',
@@ -39,6 +43,30 @@ class _CharacterClipartPickerDialogState
     _searchController.addListener(() {
       setState(() => _searchText = _searchController.text.trim().toLowerCase());
     });
+    _loadAssets();
+  }
+
+  Future<void> _loadAssets() async {
+    final chars = await _filterExisting(_allCharacterAssets);
+    final clips = await _filterExisting(_allClipartAssets);
+    if (mounted) {
+      setState(() {
+        _characterAssets = chars;
+        _clipartAssets = clips;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<List<String>> _filterExisting(List<String> paths) async {
+    final found = <String>[];
+    for (final path in paths) {
+      try {
+        await rootBundle.load(path);
+        found.add(path);
+      } catch (_) {}
+    }
+    return found;
   }
 
   @override
@@ -72,20 +100,26 @@ class _CharacterClipartPickerDialogState
         content: SizedBox(
           width: 340,
           height: 440,
-          child: TabBarView(
-            children: [
-              _buildAssetsGrid(
-                context,
-                _characterAssets.where(_filterBySearch).toList(),
-                type: 'character',
-              ),
-              _buildAssetsGrid(
-                context,
-                _clipartAssets.where(_filterBySearch).toList(),
-                type: 'clipart',
-              ),
-            ],
-          ),
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : TabBarView(
+                  children: [
+                    _buildAssetsGrid(
+                      context,
+                      _characterAssets.where(_filterBySearch).toList(),
+                      type: 'character',
+                      emptyHint:
+                          'Character packs coming soon.\nUse Upload to add your own images.',
+                    ),
+                    _buildAssetsGrid(
+                      context,
+                      _clipartAssets.where(_filterBySearch).toList(),
+                      type: 'clipart',
+                      emptyHint:
+                          'Clip-art packs coming soon.\nUse Upload to add stickers.',
+                    ),
+                  ],
+                ),
         ),
       ),
     );
@@ -115,12 +149,17 @@ class _CharacterClipartPickerDialogState
     BuildContext context,
     List<String> assets, {
     required String type,
+    required String emptyHint,
   }) {
     if (assets.isEmpty) {
       return Center(
-        child: Text(
-          'No assets found',
-          style: TextStyle(color: Colors.grey[600]),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            emptyHint,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey[600], height: 1.4),
+          ),
         ),
       );
     }

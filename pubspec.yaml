@@ -1,5 +1,5 @@
 name: comic_editor
-description: "A new Flutter project."
+description: "Create comics and manga on your device. Layout panels, draw, export PDF."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -42,20 +42,38 @@ dependencies:
   printing: ^5.11.0
   hive: ^2.2.3
   flutter_svg: ^2.0.7
+  flutter_native_splash: ^2.4.4
+  share_plus: ^10.1.4
+  file_picker: ^8.1.7
+  google_fonts: ^6.2.1
 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
   flutter_lints: ^5.0.0
   hive_generator: ^2.0.1
   build_runner: ^2.4.6
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/branding/app_icon.png
+  adaptive_icon_background: "#1E88E5"
+  adaptive_icon_foreground: assets/branding/app_icon.png
+  remove_alpha_ios: true
+
+flutter_native_splash:
+  color: "#1E88E5"
+  image: assets/branding/app_icon.png
+  android_12:
+    color: "#1E88E5"
+    image: assets/branding/app_icon.png
+  ios: true
+  android: true
+  web: false
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -71,6 +89,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/branding/
     - assets/characters/
     - assets/clipart/
 
