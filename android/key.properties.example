@@ -1,0 +1,12 @@
+# Copy to android/key.properties and fill in values before release builds.
+# See docs/KEYSTORE_SETUP.md
+#
+# 1. Run:  .\scripts\generate-keystore.ps1
+# 2. Edit android/key.properties with your passwords
+#
+# NEVER commit key.properties or *.jks to version control.
+
+storePassword=YOUR_STORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=upload
+storeFile=../key/comicEditor_app-keystore.jks

@@ -1,8 +1,10 @@
 import 'dart:io';
 
+import 'package:comic_editor/config/app_info.dart';
 import 'package:comic_editor/main.dart';
 import 'package:comic_editor/project_hive_model.dart';
 import 'package:comic_editor/services/app_settings.dart';
+import 'package:comic_editor/services/inkwell_profile_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 
@@ -27,6 +29,7 @@ void main() {
 
     await Hive.openBox<ProjectHiveModel>('drafts');
     await AppSettings.init();
+    await InkwellProfileService.init();
   });
 
   tearDownAll(() async {
@@ -36,12 +39,12 @@ void main() {
     }
   });
 
-  testWidgets('shows Comic Creator home screen', (WidgetTester tester) async {
+  testWidgets('shows Inkwell home screen', (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Comic Creator'), findsOneWidget);
-    expect(find.text('No projects yet'), findsOneWidget);
-    expect(find.text('New Project'), findsOneWidget);
+    expect(find.text(AppInfo.appName), findsWidgets);
+    expect(find.text('Continue Creating'), findsOneWidget);
+    expect(find.text('New Comic'), findsOneWidget);
   });
 }

@@ -6,6 +6,8 @@ class ComicTemplate {
   final String description;
   final IconData icon;
   final Color color;
+  final String category;
+  final int panelCount;
 
   const ComicTemplate({
     required this.id,
@@ -13,32 +15,71 @@ class ComicTemplate {
     required this.description,
     required this.icon,
     required this.color,
+    this.category = 'comic',
+    this.panelCount = 1,
   });
 
   bool get isBlank => id.isEmpty;
+
+  String get categoryLabel {
+    switch (category) {
+      case 'manga':
+        return 'Manga';
+      case 'webtoon':
+        return 'Webtoon';
+      default:
+        return 'Comic';
+    }
+  }
 }
 
+const kTemplateCategories = ['all', 'manga', 'webtoon'];
+
 const kComicTemplates = [
+  ComicTemplate(
+    id: 'manga_page',
+    title: 'Classic Shonen',
+    description: 'Big left + 2 stacked',
+    icon: Icons.menu_book,
+    color: Color(0xFF005696),
+    category: 'manga',
+    panelCount: 6,
+  ),
+  ComicTemplate(
+    id: 'webtoon',
+    title: 'Infinite Scroll',
+    description: 'Tall vertical panels',
+    icon: Icons.smartphone,
+    color: Color(0xFF005696),
+    category: 'webtoon',
+    panelCount: 3,
+  ),
+  ComicTemplate(
+    id: 'single_splash',
+    title: "Hero's Journey",
+    description: 'Hero splash + action panels',
+    icon: Icons.crop_free,
+    color: Color(0xFF005696),
+    category: 'manga',
+    panelCount: 3,
+  ),
+  ComicTemplate(
+    id: 'comic_strip',
+    title: 'Daily Strip',
+    description: '4-panel daily grid',
+    icon: Icons.view_week,
+    color: Color(0xFF005696),
+    category: 'comic',
+    panelCount: 4,
+  ),
   ComicTemplate(
     id: 'grid_2x2',
     title: '4-Panel Grid',
     description: 'Classic comic page',
     icon: Icons.grid_4x4,
     color: Color(0xFF7E57C2),
-  ),
-  ComicTemplate(
-    id: 'manga_page',
-    title: 'Manga Page',
-    description: 'Big left + 2 stacked',
-    icon: Icons.menu_book,
-    color: Color(0xFFD81B60),
-  ),
-  ComicTemplate(
-    id: 'webtoon',
-    title: 'Webtoon Scroll',
-    description: 'Tall vertical panels',
-    icon: Icons.smartphone,
-    color: Color(0xFF1E88E5),
+    category: 'comic',
+    panelCount: 4,
   ),
   ComicTemplate(
     id: 'grid_3x2',
@@ -46,20 +87,8 @@ const kComicTemplates = [
     description: '3 columns × 2 rows',
     icon: Icons.grid_on,
     color: Color(0xFF5E35B1),
-  ),
-  ComicTemplate(
-    id: 'comic_strip',
-    title: 'Comic Strip',
-    description: '3 panels in a row',
-    icon: Icons.view_week,
-    color: Color(0xFFFB8C00),
-  ),
-  ComicTemplate(
-    id: 'single_splash',
-    title: 'Full Page',
-    description: 'One dramatic splash',
-    icon: Icons.crop_free,
-    color: Color(0xFF3949AB),
+    category: 'manga',
+    panelCount: 6,
   ),
   ComicTemplate(
     id: 'single_column',
@@ -67,6 +96,8 @@ const kComicTemplates = [
     description: 'Vertical story flow',
     icon: Icons.view_agenda,
     color: Color(0xFF43A047),
+    category: 'webtoon',
+    panelCount: 3,
   ),
   ComicTemplate(
     id: 'five_panel',

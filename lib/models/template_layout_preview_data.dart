@@ -15,7 +15,7 @@ List<PreviewPanel> previewPanelsForTemplate(String templateId) {
     case 'single_column':
       return _grid(cols: 1, rows: 3);
     case 'webtoon':
-      return _grid(cols: 1, rows: 4);
+      return _grid(cols: 1, rows: 3);
     case 'two_column':
       return _grid(cols: 2, rows: 1);
     case 'three_column':
@@ -23,9 +23,9 @@ List<PreviewPanel> previewPanelsForTemplate(String templateId) {
     case 'two_row':
       return _grid(cols: 1, rows: 2);
     case 'single_splash':
-      return [_panel(_p, _p, 1 - _p, 1 - _p)];
+      return _heroJourneyLayout();
     case 'comic_strip':
-      return _horizontalStrip(count: 3, panelHeight: 0.52);
+      return _grid(cols: 2, rows: 2);
     case 'four_strip':
       return _horizontalStrip(count: 4, panelHeight: 0.48);
     case 'header_content':
@@ -34,13 +34,7 @@ List<PreviewPanel> previewPanelsForTemplate(String templateId) {
         _panel(_p, _p + 0.22, 1 - _p, 1 - _p),
       ];
     case 'manga_page':
-      final split = _p + (1 - 2 * _p - _g) * 0.58;
-      final midY = _p + (1 - 2 * _p - _g) / 2 + _g / 2;
-      return [
-        _panel(_p, _p, split, 1 - _p),
-        _panel(split + _g, _p, 1 - _p, midY - _g / 2),
-        _panel(split + _g, midY + _g / 2, 1 - _p, 1 - _p),
-      ];
+      return _mangaClassicShonenLayout();
     case 'magazine':
       final split = _p + (1 - 2 * _p - _g) * 0.6;
       final sideMid = _p + (1 - 2 * _p) * 0.32 + _g / 2;
@@ -82,6 +76,41 @@ List<PreviewPanel> previewPanelsForTemplate(String templateId) {
     default:
       return const [];
   }
+}
+
+/// Classic Shonen — 6 panels matching the manga thumbnail structure.
+List<PreviewPanel> _mangaClassicShonenLayout() {
+  const p = 0.02;
+  const g = 0.015;
+
+  final topH = 0.36;
+  final bottomTop = p + topH + g;
+  final topSplit = p + (1 - 2 * p - g) * 0.40;
+  final bottomSplit = p + (1 - 2 * p - g) * 0.45;
+  final midH = bottomTop + (1 - p - bottomTop - g) * 0.48;
+  final bottomRowTop = midH + g;
+  final panel4W = (bottomSplit - p - g) / 2;
+
+  return [
+    _panel(p, p, topSplit, p + topH),
+    _panel(topSplit + g, p, 1 - p, p + topH),
+    _panel(p, bottomTop, bottomSplit, midH),
+    _panel(p, bottomRowTop, p + panel4W, 1 - p),
+    _panel(p + panel4W + g, bottomRowTop, bottomSplit, 1 - p),
+    _panel(bottomSplit + g, bottomTop, 1 - p, 1 - p),
+  ];
+}
+
+/// Hero's Journey — wide splash top + two action panels below.
+List<PreviewPanel> _heroJourneyLayout() {
+  final heroH = _p + (1 - 2 * _p - _g) * 0.58;
+  final rowTop = heroH + _g;
+  final cellW = (1 - 2 * _p - _g) / 2;
+  return [
+    _panel(_p, _p, 1 - _p, heroH),
+    _panel(_p, rowTop, _p + cellW, 1 - _p),
+    _panel(_p + cellW + _g, rowTop, 1 - _p, 1 - _p),
+  ];
 }
 
 PreviewPanel _panel(double left, double top, double right, double bottom) =>

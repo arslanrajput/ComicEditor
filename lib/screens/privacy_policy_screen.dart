@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../config/app_info.dart';
+import '../config/privacy_policy_content.dart';
+import '../theme/comic_theme.dart';
 
 class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});
@@ -6,32 +11,98 @@ class PrivacyPolicyScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Privacy Policy')),
+      appBar: AppBar(
+        title: const Text('Privacy Policy'),
+      ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: const [
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        children: [
           Text(
-            'Privacy Policy — Comic Creator',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            AppInfo.appName,
+            style: GoogleFonts.inter(
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              color: ComicTheme.primary,
+            ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 4),
           Text(
-            'Last updated: June 2026\n\n'
-            'Comic Creator stores your comic projects on your device only. '
-            'We do not collect, transmit, or sell your personal data.\n\n'
-            'Data stored locally:\n'
-            '• Project names and comic pages\n'
-            '• Panel layouts and artwork you create\n'
-            '• Images you choose to import from your gallery\n\n'
-            'Permissions:\n'
-            '• Camera / Photos — only when you tap Upload to add images to a panel\n'
-            '• Internet — used by the PDF share sheet on some devices\n\n'
-            'You can delete all data by uninstalling the app or deleting projects in the app.\n\n'
-            'Contact: support@example.com (replace with your support email before publishing).',
-            style: TextStyle(fontSize: 15, height: 1.5),
+            'Privacy Policy',
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
           ),
+          const SizedBox(height: 8),
+          Text(
+            'Last updated: ${PrivacyPolicyContent.lastUpdated}',
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+          ),
+          const SizedBox(height: 24),
+          for (final section in PrivacyPolicyContent.sections) ...[
+            _SectionBlock(section: section),
+            const SizedBox(height: 20),
+          ],
         ],
       ),
+    );
+  }
+}
+
+class _SectionBlock extends StatelessWidget {
+  final PrivacySection section;
+
+  const _SectionBlock({required this.section});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          section.title,
+          style: GoogleFonts.inter(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            color: ComicTheme.primary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          section.body,
+          style: const TextStyle(fontSize: 15, height: 1.55),
+        ),
+        if (section.bullets.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          for (final bullet in section.bullets)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6, left: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('•  ', style: TextStyle(fontSize: 15, height: 1.55)),
+                  Expanded(
+                    child: Text(
+                      bullet.replaceAll('**', ''),
+                      style: const TextStyle(fontSize: 15, height: 1.55),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+        if (section.footer != null) ...[
+          const SizedBox(height: 10),
+          Text(
+            section.footer!,
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.5,
+              color: Colors.grey.shade700,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

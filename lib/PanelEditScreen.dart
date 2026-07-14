@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -27,6 +27,7 @@ import 'SpeechDrag/DragSpeechBubbleComponents.dart';
 import 'SpeechDrag/DragSpeechBubbleData.dart';
 import 'TextEditorDialog/TextEditDialog.dart';
 import 'theme/comic_theme.dart';
+import '../widgets/story_text_widget.dart';
 import 'utils/edit_history.dart';
 import 'utils/element_rotation.dart';
 import 'utils/project_clone.dart';
@@ -677,17 +678,7 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
           width: element.width,
           height: element.height,
           alignment: Alignment.center,
-          child: Text(
-            element.value,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: element.fontSize ?? 16,
-              color: element.color ?? Colors.black,
-              fontFamily: element.fontFamily,
-              fontWeight: element.fontWeight ?? FontWeight.normal,
-              fontStyle: element.fontStyle ?? FontStyle.normal,
-            ),
-          ),
+          child: StoryTextWidget.fromElement(element),
         );
         break;
 
@@ -1027,17 +1018,7 @@ class _PanelEditScreenState extends State<PanelEditScreen> {
           width: element.width,
           height: element.height,
           alignment: Alignment.center,
-          child: Text(
-            element.value,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: element.fontSize ?? 16,
-              color: element.color ?? Colors.black,
-              fontFamily: element.fontFamily,
-              fontWeight: element.fontWeight ?? FontWeight.normal,
-              fontStyle: element.fontStyle ?? FontStyle.normal,
-            ),
-          ),
+          child: StoryTextWidget.fromElement(element),
         );
         break;
 

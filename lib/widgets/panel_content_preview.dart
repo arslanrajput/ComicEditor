@@ -7,6 +7,7 @@ import '../Draw/DrawingElementPainter.dart';
 import '../Draw/stroke_renderer.dart';
 import '../PanelModel/PanelElementModel.dart';
 import '../PanelModel/Project.dart';
+import '../widgets/story_text_widget.dart';
 
 /// Read-only renderer for panel content (elements + background).
 class PanelContentPreview extends StatelessWidget {
@@ -95,17 +96,7 @@ class PanelContentPreview extends StatelessWidget {
       case 'text':
         return Container(
           alignment: Alignment.center,
-          child: Text(
-            element.value,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: element.fontSize ?? 16,
-              color: element.color ?? Colors.black,
-              fontFamily: element.fontFamily,
-              fontWeight: element.fontWeight ?? FontWeight.normal,
-              fontStyle: element.fontStyle ?? FontStyle.normal,
-            ),
-          ),
+          child: StoryTextWidget.fromElement(element),
         );
 
       case 'speech_bubble':

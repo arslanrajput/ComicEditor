@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../config/app_info.dart';
 import '../PreviewPdf/PDFPageFormat.dart';
 import '../services/app_settings.dart';
+import '../utils/story_text_meta.dart';
+import 'privacy_policy_screen.dart';
 
-/// App-wide settings for Comic Creator.
+/// App-wide settings for Inkwell.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -19,6 +22,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late String _readingDirection;
   late bool _webtoonMode;
   late String _sortOrder;
+  late StoryTextDirection _storyDisplay;
+  late StoryTextDirection _storyTextDir;
+  late bool _storyAsBubble;
+  late String _storyFont;
+  late double _storyFontSize;
 
   @override
   void initState() {
@@ -30,6 +38,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _readingDirection = AppSettings.readingDirection;
     _webtoonMode = AppSettings.webtoonReaderMode;
     _sortOrder = AppSettings.projectSortOrder;
+    _storyDisplay = AppSettings.storyDisplayDirection;
+    _storyTextDir = AppSettings.storyTextDirection;
+    _storyAsBubble = AppSettings.storyCreateAsBubble;
+    _storyFont = AppSettings.storyDefaultFont;
+    _storyFontSize = AppSettings.storyDefaultFontSize;
   }
 
   Future<void> _save() async {
@@ -40,6 +53,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await AppSettings.setReadingDirection(_readingDirection);
     await AppSettings.setWebtoonReaderMode(_webtoonMode);
     await AppSettings.setProjectSortOrder(_sortOrder);
+    await AppSettings.setStoryDisplayDirection(_storyDisplay);
+    await AppSettings.setStoryTextDirection(_storyTextDir);
+    await AppSettings.setStoryCreateAsBubble(_storyAsBubble);
+    await AppSettings.setStoryDefaultFont(_storyFont);
+    await AppSettings.setStoryDefaultFontSize(_storyFontSize);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Settings saved')),
@@ -118,6 +136,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   setState(() => _readingDirection = s.first),
             ),
           ),
+          const _SectionHeader('Story editor'),
+          ListTile(
+            title: const Text('List display direction'),
+            trailing: SegmentedButton<StoryTextDirection>(
+              segments: const [
+                ButtonSegment(
+                  value: StoryTextDirection.horizontal,
+                  label: Text('H'),
+                ),
+                ButtonSegment(
+                  value: StoryTextDirection.vertical,
+                  label: Text('V'),
+                ),
+              ],
+              selected: {_storyDisplay},
+              onSelectionChanged: (s) =>
+                  setState(() => _storyDisplay = s.first),
+            ),
+          ),
+          ListTile(
+            title: const Text('New text direction'),
+            trailing: SegmentedButton<StoryTextDirection>(
+              segments: const [
+                ButtonSegment(
+                  value: StoryTextDirection.horizontal,
+                  label: Text('H'),
+                ),
+                ButtonSegment(
+                  value: StoryTextDirection.vertical,
+                  label: Text('V'),
+                ),
+              ],
+              selected: {_storyTextDir},
+              onSelectionChanged: (s) =>
+                  setState(() => _storyTextDir = s.first),
+            ),
+          ),
+          SwitchListTile(
+            title: const Text('Create new lines as speech bubbles'),
+            value: _storyAsBubble,
+            onChanged: (v) => setState(() => _storyAsBubble = v),
+          ),
           const _SectionHeader('Projects list'),
           ListTile(
             title: const Text('Sort projects by'),
@@ -130,6 +190,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 DropdownMenuItem(value: 'created', child: Text('Date created')),
               ],
               onChanged: (v) => setState(() => _sortOrder = v ?? 'modified'),
+            ),
+          ),
+          const _SectionHeader('About'),
+          ListTile(
+            leading: const Icon(Icons.privacy_tip_outlined),
+            title: const Text('Privacy Policy'),
+            subtitle: Text(AppInfo.supportEmail),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
             ),
           ),
           const SizedBox(height: 24),

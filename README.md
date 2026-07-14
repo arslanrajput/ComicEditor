@@ -1,16 +1,56 @@
-# comic_editor
+# Inkwell
 
-A new Flutter project.
+Comic editor for your device — layout panels, draw, add speech bubbles, and export PDF. No account required; projects are saved locally.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- **Home dashboard** — resume projects, quick actions, trending templates
+- **Layout editor** — templates, drag/resize panels, multi-page comics
+- **Panel editor** — draw, text, speech bubbles, images, clipart
+- **Character Studio** — build cast for your stories
+- **Story editor** — script beats linked to panels
+- **Export** — PDF, PNG pages, project backup JSON
 
-A few resources to get you started if this is your first Flutter project:
+## Getting started
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+```bash
+flutter pub get
+flutter run
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Release builds
+
+See **[docs/PUBLISHING.md](docs/PUBLISHING.md)** for signing, store listings, and privacy policy hosting.
+
+```bash
+flutter build appbundle --release   # Google Play
+flutter build ipa --release         # App Store (macOS)
+```
+
+## Configuration before publish
+
+Update `lib/config/app_info.dart`:
+
+- `supportEmail`
+- `privacyPolicyUrl`
+
+## Project structure
+
+| Path | Purpose |
+|------|---------|
+| `lib/ProjectsListScreen.dart` | Main shell & navigation |
+| `lib/PanelLayoutEditorScreen.dart` | Page/panel layout |
+| `lib/PanelEditScreen.dart` | Panel content editor |
+| `lib/screens/` | Home, templates, wizard, profile |
+| `assets/` | Icons, templates, characters, clipart |
+
+## Tests
+
+```bash
+flutter test
+flutter analyze
+```
+
+## License
+
+Proprietary — all rights reserved unless otherwise noted.

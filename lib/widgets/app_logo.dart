@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Comic Creator brand mark — same asset as launcher icon and splash.
+/// Inkwell brand mark — launcher icon and in-app logo.
 class AppLogo extends StatelessWidget {
   final double size;
   final bool showShadow;
@@ -22,6 +22,15 @@ class AppLogo extends StatelessWidget {
         width: size,
         height: size,
         fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: const Color(0xFF005696),
+            borderRadius: BorderRadius.circular(size * 0.22),
+          ),
+          child: Icon(Icons.edit, color: Colors.white, size: size * 0.5),
+        ),
       ),
     );
 

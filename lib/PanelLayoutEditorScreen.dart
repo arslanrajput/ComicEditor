@@ -21,8 +21,10 @@ import 'widgets/layout_editor_coach.dart';
 import 'widgets/template_layout_preview.dart';
 import 'utils/edit_history.dart';
 import 'utils/project_clone.dart';
+import 'utils/template_layout_applier.dart';
 import 'utils/pdf_page_export.dart';
 import 'screens/comic_reader_screen.dart';
+import 'screens/story_editor_screen.dart';
 import 'widgets/export_options_sheet.dart';
 import 'widgets/panel_content_preview.dart';
 
@@ -142,36 +144,6 @@ class _PanelLayoutEditorScreenState extends State<PanelLayoutEditorScreen>
     _showGrid = AppSettings.defaultShowGrid;
     _snapToGrid = AppSettings.defaultSnapToGrid;
 
-    if (kDebugMode) {
-      print('=== PanelLayoutEditorScreen INIT ===');
-      print('Project: ${currentProject.name}');
-      print('Pages count: ${pages.length}');
-    }
-    for (int pageIndex = 0; pageIndex < pages.length; pageIndex++) {
-      final page = pages[pageIndex];
-      if (kDebugMode) {
-        print('Page $pageIndex: ${page.length} panels');
-      }
-
-      for (int panelIndex = 0; panelIndex < page.length; panelIndex++) {
-        final panel = page[panelIndex];
-        if (kDebugMode) {
-          print(
-              '  Panel $panelIndex (${panel.id}): ${panel.elements.length} elements');
-        }
-
-        for (int elementIndex = 0;
-            elementIndex < panel.elements.length;
-            elementIndex++) {
-          final element = panel.elements[elementIndex];
-          if (kDebugMode) {
-            print(
-                '    Element $elementIndex: ${element.type} - "${element.value}"');
-          }
-        }
-      }
-    }
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.applyTemplateOnOpen != null &&
           widget.applyTemplateOnOpen!.isNotEmpty) {
@@ -194,42 +166,17 @@ class _PanelLayoutEditorScreenState extends State<PanelLayoutEditorScreen>
   }
 
   void _applyTemplateById(String id) {
-    switch (id) {
-      case 'grid_2x2':
-        _applyGrid2x2Layout();
-      case 'single_column':
-        _applySingleColumnLayout();
-      case 'two_column':
-        _applyTwoColumnLayout();
-      case 'three_column':
-        _applyThreeColumnLayout();
-      case 'two_row':
-        _applyTwoRowLayout();
-      case 'comic_strip':
-        _applyComicStripLayout();
-      case 'webtoon':
-        _applyWebtoonLayout();
-      case 'header_content':
-        _applyHeaderContentLayout();
-      case 'magazine':
-        _applyMagazineLayout();
-      case 'single_splash':
-        _applySingleSplashLayout();
-      case 'grid_3x2':
-        _applyGrid3x2Layout();
-      case 'grid_2x3':
-        _applyGrid2x3Layout();
-      case 'manga_page':
-        _applyMangaPageLayout();
-      case 'five_panel':
-        _applyFivePanelLayout();
-      case 'four_strip':
-        _applyFourStripLayout();
-      case 'splash_three':
-        _applySplashThreeLayout();
-      case 'story_l':
-        _applyStoryLLayout();
-    }
+    final panels = layoutPanelsFromTemplate(
+      templateId: id,
+      pageWidth: _canvasWidth,
+      pageHeight: _canvasHeight,
+    );
+    if (panels.isEmpty) return;
+
+    _mutate(() {
+      pages[_currentPage] = panels;
+      selectedPanel = null;
+    });
   }
 
   void _applyWebtoonLayout() {
@@ -729,6 +676,12 @@ class _PanelLayoutEditorScreenState extends State<PanelLayoutEditorScreen>
               icon: Icons.dashboard_customize_outlined,
               label: 'Layouts',
               onPressed: _showLayoutTemplates,
+            ),
+            ComicTheme.toolbarIconButton(
+              context: context,
+              icon: Icons.article_outlined,
+              label: 'Story',
+              onPressed: _openStoryEditor,
             ),
             ComicTheme.toolbarIconButton(
               context: context,
@@ -2578,6 +2531,25 @@ class _PanelLayoutEditorScreenState extends State<PanelLayoutEditorScreen>
         pages: newPages,
         lastModified: DateTime.now(),
       );
+    });
+  }
+
+  void _openStoryEditor() async {
+    final updated = await Navigator.push<Project>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => StoryEditorScreen(
+          project: currentProject.copyWith(pages: ProjectClone.clonePages(pages)),
+          pageFormat: _selectedPageFormat,
+        ),
+      ),
+    );
+    if (updated == null || !mounted) return;
+    _mutate(() {
+      pages = ProjectClone.clonePages(updated.pages);
+      currentProject = updated;
+      _currentPage = _currentPage.clamp(0, pages.length - 1);
+      currentPageIndex = _currentPage;
     });
   }
 

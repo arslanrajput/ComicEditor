@@ -16,7 +16,7 @@ class HelpScreen extends StatelessWidget {
           _section(
             'Getting started',
             '1. Tap New Project on the home screen.\n'
-                '2. Choose a layout template (or start blank).\n'
+                '2. Follow the wizard: name & format, plot beats, then cast.\n'
                 '3. Tap a panel, then Edit Panel to add content.\n'
                 '4. Preview your comic, then Export PDF to share.',
           ),

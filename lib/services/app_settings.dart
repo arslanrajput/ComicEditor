@@ -1,5 +1,7 @@
 import 'package:hive/hive.dart';
 
+import '../utils/story_text_meta.dart';
+
 /// Lightweight app preferences stored locally (no account).
 class AppSettings {
   static const _boxName = 'app_settings';
@@ -73,4 +75,44 @@ class AppSettings {
 
   static Future<void> setProjectSortOrder(String value) =>
       _box.put('project_sort_order', value);
+
+  // --- Story editor ---
+  static StoryTextDirection get storyDisplayDirection =>
+      StoryTextDirection.fromKey(_get('story_display_direction', 'horizontal'));
+
+  static Future<void> setStoryDisplayDirection(StoryTextDirection value) =>
+      _box.put('story_display_direction', value.storageKey);
+
+  static StoryTextDirection get storyTextDirection =>
+      StoryTextDirection.fromKey(_get('story_text_direction', 'horizontal'));
+
+  static Future<void> setStoryTextDirection(StoryTextDirection value) =>
+      _box.put('story_text_direction', value.storageKey);
+
+  static bool get storyCreateAsBubble =>
+      _get('story_create_as_bubble', false);
+
+  static Future<void> setStoryCreateAsBubble(bool value) =>
+      _box.put('story_create_as_bubble', value);
+
+  static String get storyDefaultFont =>
+      _get('story_default_font', 'Comic Neue');
+
+  static Future<void> setStoryDefaultFont(String value) =>
+      _box.put('story_default_font', value);
+
+  static double get storyDefaultFontSize =>
+      (_get<num>('story_default_font_size', 16)).toDouble();
+
+  static Future<void> setStoryDefaultFontSize(double value) =>
+      _box.put('story_default_font_size', value);
+
+  // --- Home ---
+  static List<String> get bookmarkedTemplateIds {
+    final raw = _get<List>('bookmarked_template_ids', const []);
+    return raw.map((e) => e.toString()).toList();
+  }
+
+  static Future<void> setBookmarkedTemplateIds(List<String> ids) =>
+      _box.put('bookmarked_template_ids', ids);
 }

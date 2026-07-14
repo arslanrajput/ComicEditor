@@ -5,7 +5,7 @@
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
-		<string>Comic Creator</string>
+		<string>Inkwell</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 		<key>CFBundleInfoDictionaryVersion</key>
 		<string>6.0</string>
 		<key>CFBundleName</key>
-		<string>Comic Creator</string>
+		<string>Inkwell</string>
 		<key>CFBundlePackageType</key>
 		<string>APPL</string>
 		<key>CFBundleShortVersionString</key>
@@ -46,6 +46,14 @@
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
 		<key>UIStatusBarHidden</key>
+		<true/>
+		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false/>
+		<key>NSCameraUsageDescription</key>
+		<string>Inkwell uses the camera when you choose to take a photo for a panel or character portrait.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Inkwell accesses your photo library when you import images into comic panels or set a profile picture.</string>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>Inkwell may save exported comic images to your photo library when you choose to save or share.</string>
 	</dict>
 </plist>

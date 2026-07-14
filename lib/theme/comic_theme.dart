@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
-/// Shared visual language for Comic Creator (matches product wireframes).
+/// Shared visual language for Inkwell (comic creator app).
 class ComicTheme {
-  static const Color primary = Color(0xFF1E88E5);
-  static const Color primaryDark = Color(0xFF1565C0);
-  static const Color scaffoldBg = Color(0xFFF4F6F8);
+  static const Color primary = Color(0xFF005696);
+  static const Color primaryDark = Color(0xFF003D6B);
+  static const Color inkwellLight = Color(0xFFE1F0FF);
+  static const Color scaffoldBg = Color(0xFFF5F7FA);
   static const Color toolbarBg = Color(0xFFECEFF1);
   static const Color drawerBg = Color(0xFFCFD8DC);
   static const Color panelBorder = Color(0xFFB0BEC5);
